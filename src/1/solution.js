@@ -1,4 +1,6 @@
+const { from } = require('rxjs');
+const { reduce } = require('rxjs/operators');
 
-module.exports = inputLines => {
-  return inputLines.reduce((acc, line) => acc + parseInt(line), 0);;
-};
+module.exports = inputLines => from(inputLines).pipe(
+    reduce((acc, line) => acc + parseInt(line), 0)
+);
