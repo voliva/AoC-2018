@@ -1,7 +1,4 @@
-// const {compose: c} = require('ramda');
 
 module.exports = inputLines => {
-  // TODO: implement the solution;
-
-  return inputLines;
+  return inputLines.reduce((acc, line) => acc + parseInt(line), 0);;
 };
