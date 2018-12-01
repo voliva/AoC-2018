@@ -1,2 +1,2 @@
 
-module.exports = require('./rxjs');
+module.exports = require('./ramda');
