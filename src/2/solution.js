@@ -19,29 +19,60 @@ const solution1 = inputLines => {
     return twice * thrice;
 };
 
-const wordsAreSimilar = (w1, w2) => {
-    const w1a = w1.split('');
-    const w2a = w2.split('');
-    let diffingChar = -1;
-    for(let i=0; i<w1a.length && i<w2a.length; i++) {
-        if(w1a[i] !== w2a[i]) {
-            if(diffingChar > 0) {
-                return -1;
+const findSimilar = (tree, word) => {
+    const characters = word.split('');
+    let state = [{
+        tree,
+        wildcard: true,
+        acceptedChars: ''
+    }];
+
+    for(let i=0; i<characters.length; i++) {
+        const c = characters[i];
+
+        const newState = [];
+        for(let j=0; j<state.length; j++) {
+            const s = state[j];
+            if(s.tree[c]) {
+                newState.push({
+                    tree: s.tree[c],
+                    wildcard: s.wildcard,
+                    acceptedChars: s.acceptedChars + c
+                });
             }
-            diffingChar = i;
+            if(s.wildcard) {
+                Object.keys(s.tree).forEach(c => newState.push({
+                    tree: s.tree[c],
+                    wildcard: false,
+                    acceptedChars: s.acceptedChars
+                }));
+            }
+        }
+        state = newState;
+
+        if(!state.length) {
+            return false;
         }
     }
-    return diffingChar;
+
+    return state[0].acceptedChars;
+}
+
+const addWord = (tree, word) => {
+    if(!Array.isArray(word)) word = word.split('');
+    if(word.length === 0) return tree;
+    tree[word[0]] = addWord(tree[word[0]] || {}, word.slice(1));
+    return tree;
 }
 
 const solution2 = inputLines => {
+    let tree = {};
     for(let i=0; i<inputLines.length; i++) {
-        for(let j=i+1; j<inputLines.length; j++) {
-            const idx = wordsAreSimilar(inputLines[i], inputLines[j]);
-            if(idx >= 0) {
-                return inputLines[i].slice(0, idx) + inputLines[i].slice(idx+1);
-            }
+        const similar = findSimilar(tree, inputLines[i]);
+        if(similar) {
+            return similar;
         }
+        tree = addWord(tree, inputLines[i]);
     }
     return 'not found';
 };
