@@ -36,7 +36,6 @@ const solution2 = inputLines => {
 
         if(rereduced.length < minimum) {
             minimum = rereduced.length;
-            console.log(s, rereduced);
         }
     });
 
