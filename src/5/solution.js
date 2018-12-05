@@ -34,9 +34,9 @@ const solution2 = inputLines => {
     symbols.forEach(s => {
         const rereduced = react(reduced, s);
 
-        console.log(s, rereduced.length);
         if(rereduced.length < minimum) {
             minimum = rereduced.length;
+            console.log(s, rereduced);
         }
     });
 
