@@ -83,7 +83,21 @@ const solution1 = inputLines => {
 };
 
 const solution2 = inputLines => {
-    return inputLines;
+    const coordinates = parseCoordinates(inputLines);
+    const {min, max} = getExtremes(coordinates);
+    
+    let total = 0;
+    for(let y=min[1]; y<=max[1]; y++) {
+        for(let x=min[0]; x<=max[0]; x++) {
+            const coord = [x,y];
+            const localTotal = coordinates.reduce((acc, c) => acc + getDistance(coord, c), 0)
+            if(localTotal < 10000) {
+                total++;
+            }
+        }
+    }
+
+    return total;
 };
 
 module.exports = [solution1, solution2];
