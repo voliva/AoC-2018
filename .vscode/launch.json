@@ -10,7 +10,7 @@
             "name": "Launch Program",
             "program": "${workspaceFolder}/src/index.js",
             "cwd": "${workspaceFolder}/src",
-            "args": ["7", "1"]
+            "args": ["7"]
         }
     ]
 }

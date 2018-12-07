@@ -1,131 +1,109 @@
+// Start 21:54
 
 const regex = /^Step ([A-Z]) must be finished before step ([A-Z])/;
 
 const parseLine = line => {
-    const result = regex.exec(line);
+    const [source, dest] = line.split(' -> ');
     return {
-        req: result[1],
-        then: result[2]
-    };
-}
-
-const Achar = 'A'.charCodeAt(0);
-const Zchar = 'Z'.charCodeAt(0);
-const symbols = Zchar - Achar + 1;
-const getPos = (row, col) => {
-    return row*symbols + col;
-}
-const getCharPos = (req, then) => {
-    const row = req.charCodeAt(0) - Achar;
-    const col = then.charCodeAt(0) - Achar;
-    return getPos(row, col);
-}
-
-const findAvailableChars = (graph, picked = []) => {
-    const candidates = [];
-    for(let col = 0; col < symbols; col++) {
-        let isCandidate = !picked.some(c => c.charCodeAt(0) - Achar === col);
-
-        for(let row = 0; row < symbols && isCandidate; row++) {
-            const i = getPos(row, col);
-            isCandidate = isCandidate && !graph[i];
-        }
-
-        if(isCandidate) {
-            candidates.push(String.fromCharCode(Achar + col));
-        }
-    }
-    return candidates;
-}
-
-const fillGraph = instructions => {
-    const graph = new Array(symbols*symbols);
-
-    instructions.forEach(({req, then}) => {
-        const i = getCharPos(req, then);
-        graph[i] = true;
-    });
-
-    return graph;
-}
-
-const markStepDone = (step, graph) => {
-    const row = step.charCodeAt(0) - Achar;
-    for(let col=0; col<symbols; col++) {
-        const i = getPos(row, col);
-        graph[i] = false;
+        source, dest
     }
 }
 
-const getDependencies = (step, graph) => {
-    const row = step.charCodeAt(0) - Achar;
-    const deps = [];
-    for(let i=0; i<symbols; i++) {
-        if(graph[getPos(row, i)]) {
-            const dep = String.fromCharCode(Achar + i);
-            deps.push(dep);
-        }
+const numRegex = /^\d+$/;
+const andRegex = /^([^ ]+) AND ([^ ]+)$/;
+const orRegex = /^([^ ]+) OR ([^ ]+)$/;
+const lShiftRegex = /^([^ ]+) LSHIFT ([^ ]+)$/;
+const rShiftRegex = /^([^ ]+) RSHIFT ([^ ]+)$/;
+const notRegex = /^NOT ([^ ]+)$/;
+const wireRegex = /^([^ ]+)$/
+
+const calculateWire = (wire, instructions) => {
+    if(numRegex.test(wire)) {
+        return parseInt(wire);
     }
-    return deps;
+
+    const command = instructions[wire];
+    if(!command) {
+        console.log('no command for', wire);
+        return null;
+    }
+    if(numRegex.test(command)) {
+        return parseInt(command);
+    }
+
+    const andResult = andRegex.exec(command);
+    if(andResult) {
+        const result = calculateWire(andResult[1], instructions) &
+            calculateWire(andResult[2], instructions);
+        instructions[wire] = result;
+        return result;
+    }
+
+    const orResult = orRegex.exec(command);
+    if(orResult) {
+        const result = calculateWire(orResult[1], instructions) |
+            calculateWire(orResult[2], instructions);
+        instructions[wire] = result;
+        return result;
+    }
+
+    const lShiftResult = lShiftRegex.exec(command);
+    if(lShiftResult) {
+        const result = calculateWire(lShiftResult[1], instructions) <<
+            calculateWire(lShiftResult[2], instructions);
+        instructions[wire] = result;
+        return result;
+    }
+
+    const rShiftResult = rShiftRegex.exec(command);
+    if(rShiftResult) {
+        const result = calculateWire(rShiftResult[1], instructions) >>
+            calculateWire(rShiftResult[2], instructions);
+        instructions[wire] = result;
+        return result;
+    }
+
+    const notResult = notRegex.exec(command);
+    if(notResult) {
+        const result = 65536 + ~calculateWire(notResult[1], instructions);
+        instructions[wire] = result;
+        return result;
+    }
+
+    const wireResult = wireRegex.exec(command);
+    if(wireResult) {
+        const result = calculateWire(wireResult[1], instructions);
+        instructions[wire] = result;
+        return result;
+    }
+
+    console.log('cant parse', command);
 }
 
 const solution1 = inputLines => {
-    const instructions = inputLines.map(parseLine);
+    const parsed = inputLines.map(parseLine);
 
-    const graph = fillGraph(instructions);
+    const instructions = {};
+    parsed.forEach(({source, dest}) => {
+        instructions[dest] = source
+    });
 
-    const picked = [];
-    let toPick = null;
-    do {
-        const available = findAvailableChars(graph, picked);
-        toPick = available[0];
-
-        if(toPick) {
-            const deps = getDependencies(toPick, graph);
-            console.log(`${toPick} (${toPick.charCodeAt(0)-Achar+61}) unlocks [${deps.join(',')}]`);
-
-            picked.push(toPick);
-            markStepDone(toPick, graph);
-        }
-    } while(toPick);
-
-    return picked.join('');
+    return calculateWire('a', instructions);
 };
 
 const solution2 = inputLines => {
-    const instructions = inputLines.map(parseLine);
+    const aValue = solution1(inputLines);
 
-    const graph = fillGraph(instructions);
+    const parsed = inputLines.map(parseLine);
+    
+    const instructions = {};
+    parsed.forEach(({source, dest}) => {
+        instructions[dest] = source
+    });
 
-    const nWorkers = 5;
-    let timeSpent = 0;
-    const picked = [];
-    const workQueue = [];
+    instructions['b'] = aValue;
 
-    do {
-        if(workQueue.length) {
-            const workFinished = workQueue.shift();
-            workQueue.forEach(w => w.time -= workFinished.time);
-            timeSpent += workFinished.time;
-            markStepDone(workFinished.step, graph);
-        }
-        const available = findAvailableChars(graph, picked);
-        
-        while(
-            available.length &&
-            workQueue.length < nWorkers
-        ) {
-            const step = available.shift();
-            picked.push(step);
-            workQueue.push({
-                step: step,
-                time: 61 + step.charCodeAt(0) - Achar
-            });
-            workQueue.sort(({time: t1}, {time: t2}) => t1 - t2);
-        }
-    } while(workQueue.length);
-
-    return timeSpent;
+    return calculateWire('a', instructions);
 };
 
 module.exports = [solution1, solution2];
