@@ -35,6 +35,16 @@ const addMetadata = tree => {
     return result;
 }
 
+const getValue = tree => {
+    if(!tree.children.length) {
+        return tree.metadata.reduce((a,b) => a+b, 0);
+    }
+
+    return tree.metadata
+        .filter(m => m > 0 && (m-1) < tree.children.length)
+        .reduce((acc,i) => acc + getValue(tree.children[i-1]), 0);
+}
+
 const solution1 = inputLines => {
     const input = inputLines[0]
         .split(' ')
@@ -45,8 +55,12 @@ const solution1 = inputLines => {
 };
 
 const solution2 = inputLines => {
+    const input = inputLines[0]
+        .split(' ')
+        .map(n => parseInt(n));
+    const result = buildTree(input);
     
-    return inputLines;
+    return getValue(result.node);
 };
 
 module.exports = [solution1, solution2];
