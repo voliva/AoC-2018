@@ -21,11 +21,7 @@ const removeMarble = node => {
     return next;
 }
 
-const solution1 = inputLines => {
-    const inputRes = inRegex.exec(inputLines);
-    const nPlayers = parseInt(inputRes[1]);
-    const lastMarble = parseInt(inputRes[2]);
-
+const getMaxScore = (nPlayers, lastMarble) => {
     const scores = new Array(nPlayers);
     const marbleToNPlayer = m => (m-1) % nPlayers;
 
@@ -49,14 +45,24 @@ const solution1 = inputLines => {
             circle = addMarble(m, circle.next);
         }
     }
-    console.log(scores);
     
     return scores.filter(s => !!s).reduce((acc, i) => Math.max(acc, i), 0);
+}
+
+const solution1 = inputLines => {
+    const inputRes = inRegex.exec(inputLines);
+    const nPlayers = parseInt(inputRes[1]);
+    const lastMarble = parseInt(inputRes[2]);
+
+    return getMaxScore(nPlayers, lastMarble);
 };
 
 const solution2 = inputLines => {
-    
-    return inputLines;
+    const inputRes = inRegex.exec(inputLines);
+    const nPlayers = parseInt(inputRes[1]);
+    const lastMarble = parseInt(inputRes[2]);
+
+    return getMaxScore(nPlayers, lastMarble*100);
 };
 
 module.exports = [solution1, solution2];
