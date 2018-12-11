@@ -18,19 +18,21 @@ const createGrid = serialNumber => {
     return grid;
 }
 
-const solution1 = (inputLines, gridSize = 3) => {
-    const grid = createGrid(parseInt(inputLines[0]));
+const calculateTotalPower = (grid, subGridSize, step = 1) => {
+    const size = Math.sqrt(grid.length);
+    const newSize = size - subGridSize;
+    const totalPowerGrid = new Array(newSize*newSize);
 
     let max = {
         x: null, y: null,
         value: -Infinity
     }
-    for(let y=0; y<300-gridSize; y++){
-        for(let x=0; x<300-gridSize; x++){
+    for(let y=0; y<newSize; y++){
+        for(let x=0; x<newSize; x++){
             let totalPower = 0;
-            for(let r=0; r<gridSize; r++){
-                for(let c=0; c<gridSize; c++){
-                    totalPower += grid[(y+r)*300 + (x+c)];
+            for(let r=0; r<subGridSize; r += step){
+                for(let c=0; c<subGridSize; c += step){
+                    totalPower += grid[(y+r)*size + (x+c)];
                 }
             }
             if(totalPower > max.value) {
@@ -39,8 +41,20 @@ const solution1 = (inputLines, gridSize = 3) => {
                     value: totalPower
                 }
             }
+            totalPowerGrid[y*newSize + x] = totalPower;
         }
     }
+
+    return {
+        grid: totalPowerGrid,
+        max
+    }
+}
+
+const solution1 = (inputLines) => {
+    const grid = createGrid(parseInt(inputLines[0]));
+
+    const {max} = calculateTotalPower(grid, 3);
 
     return {
         x: max.x + 1,
@@ -50,22 +64,37 @@ const solution1 = (inputLines, gridSize = 3) => {
 };
 
 const solution2 = inputLines => {
+    // Old one took 105 seconds, now 33s
+
+    const originalGrid = createGrid(parseInt(inputLines[0]));
+
+    const grids = {};
+
+    for(let gridSize = 2; gridSize < 300; gridSize++) {
+        console.log(gridSize);
+        const calculatedGrids = Object.keys(grids)
+            .reverse()
+            .map(v => parseInt(v));
+        const step = calculatedGrids.find(g => gridSize % g === 0) || 1;
+        const grid = step === 1 ? originalGrid : grids[step].grid;
+        grids[gridSize] = calculateTotalPower(grid, gridSize, step);
+    }
+
     let max = {
         value: -Infinity,
         gridSize: null,
         params: null
     }
-    for(let gridSize = 1; gridSize < 300; gridSize++) {
-        console.log(gridSize);
-        const result = solution1(inputLines, gridSize);
-        if(result.value > max.value) {
+    Object.keys(grids).forEach(key => {
+        const gridResult = grids[key];
+        if(gridResult.max.value > max.value) {
             max = {
-                value: result.value,
-                gridSize,
-                params: result
-            }
+                value: gridResult.max.value,
+                params: gridResult.max,
+                gridSize: key
+            };
         }
-    }
+    });
 
     return max;
 };
