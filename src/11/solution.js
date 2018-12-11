@@ -1,7 +1,4 @@
-
-const solution1 = inputLines => {
-    const gridSerialNumber = parseInt(inputLines);
-
+const createGrid = serialNumber => {
     const grid = new Array(300*300);
 
     for(let y=0; y<300; y++){
@@ -11,30 +8,28 @@ const solution1 = inputLines => {
                 Math.floor((
                     (
                         (rackId * (y+1))
-                        + gridSerialNumber
+                        + serialNumber
                     )
                     * rackId
                 ) / 100) % 10 - 5;
         }
     }
 
-    for(let y=45; y<50; y++){
-        let string = ''
-        for(let x=32; x<37; x++) {
-            string += grid[y*300 + x] + ' ';
-        }
-        console.log(string);
-    }
+    return grid;
+}
+
+const solution1 = (inputLines, gridSize = 3) => {
+    const grid = createGrid(parseInt(inputLines[0]));
 
     let max = {
         x: null, y: null,
         value: -Infinity
     }
-    for(let y=0; y<300-3; y++){
-        for(let x=0; x<300-3; x++){
+    for(let y=0; y<300-gridSize; y++){
+        for(let x=0; x<300-gridSize; x++){
             let totalPower = 0;
-            for(let r=0; r<3; r++){
-                for(let c=0; c<3; c++){
+            for(let r=0; r<gridSize; r++){
+                for(let c=0; c<gridSize; c++){
                     totalPower += grid[(y+r)*300 + (x+c)];
                 }
             }
@@ -55,8 +50,24 @@ const solution1 = inputLines => {
 };
 
 const solution2 = inputLines => {
+    let max = {
+        value: -Infinity,
+        gridSize: null,
+        params: null
+    }
+    for(let gridSize = 1; gridSize < 300; gridSize++) {
+        console.log(gridSize);
+        const result = solution1(inputLines, gridSize);
+        if(result.value > max.value) {
+            max = {
+                value: result.value,
+                gridSize,
+                params: result
+            }
+        }
+    }
 
-    return inputLines;
+    return max;
 };
 
 module.exports = [solution1, solution2];
