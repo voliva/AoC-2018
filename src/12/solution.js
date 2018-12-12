@@ -31,6 +31,16 @@ const evolveState = (state, instrMap) => {
     return [newState, idx];
 }
 
+const calculateResult = (state, firstIndex) => {
+    let result = 0;
+    for(let i=0; i<state.length; i++) {
+        if(state[i] === '#') {
+            result += (i + firstIndex);
+        }
+    }
+    return result;
+}
+
 const solution1 = inputLines => {
     const initialState = inputLines[0].slice('initial state: '.length);
     const instructions = inputLines.slice(2);
@@ -47,15 +57,10 @@ const solution1 = inputLines => {
         console.log(state.join(''), firstIndex);
     }
 
-    let result = 0;
-    for(let i=0; i<state.length; i++) {
-        if(state[i] === '#') {
-            result += (i + firstIndex);
-        }
-    }
-    return result;
+    return calculateResult(result, firstIndex);
 };
 
+const FINISH = 50000000000;
 const solution2 = inputLines => {
     const initialState = inputLines[0].slice('initial state: '.length);
     const instructions = inputLines.slice(2);
@@ -64,29 +69,22 @@ const solution2 = inputLines => {
     let state = initialState.split('');
     let firstIndex = 0;
 
-    for(let i=0; i<200; i++) {
+    let lastPattern = '';
+    let lastResult = 0;
+    for(let i=0; i<FINISH; i++) {
         const [newState, idx] = evolveState(state, instrMap);
         state = newState;
         firstIndex -= idx;
 
-        // After using this log, I've found a pattern:
-        // console.log(
-        //     state.map(_ => _ === '.' ? ' ' : _).join('').trim(), i, state.indexOf('#')
-        // );
-        // In which by i=99, structure doesn't change anymore and value just gets shifted.
-
-        if(i >= 99) {
-            let result = 0;
-            for(let i=0; i<state.length; i++) {
-                if(state[i] === '#') {
-                    result += (i + firstIndex);
-                }
-            }
-            console.log(i, result);
-            // I see that after i = 99 = 8000, it raises value by 80 on each step.
-            // So answer will be 8000 + (50000000000-1 - 99) * 80
+        const pattern = state.map(_ => _ === '.' ? ' ' : _).join('').trim();
+        const result = calculateResult(state, firstIndex);
+        if(pattern === lastPattern) {
+            // Match found, let's get the answer....
+            const resultDiff = result - lastResult;
+            return lastResult + (FINISH - i) * resultDiff;
         }
-
+        lastPattern = pattern;
+        lastResult = result;
     }
 };
 
