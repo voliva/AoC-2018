@@ -63,6 +63,7 @@ const buildGraph = inputLines => {
 
             if(isCart(c)) {
                 const cart = {
+                    id: carts.length,
                     c,
                     node: nodes[row][col],
                     hasMoved: false,
@@ -106,19 +107,19 @@ const getNextTurn = {
 const getCurveDirection = {
     '^': {
         '/': '>',
-        '\\': '<'
+        "\\": '<'
     },
     '>': {
         '/': '^',
-        '\\': 'v'
+        "\\": 'v'
     },
     'v': {
         '/': '<',
-        '\\': '>'
+        "\\": '>'
     },
     '<': {
         '/': 'v',
-        '\\': '^'
+        "\\": '^'
     }
 }
 
@@ -131,9 +132,18 @@ const tick = carts => {
         return 0;
     });
 
-    const newPositions = {};
-    let collision = false;
+    const positionsMoved = {};
+    const collisions = {};
     carts.forEach(cart => {
+        const sourceKey = `${cart.node.col},${cart.node.row}`;
+        if(positionsMoved[sourceKey]) {
+            collisions[sourceKey] = [
+                positionsMoved[sourceKey],
+                cart
+            ]
+            return;
+        }
+
         let dest = null;
         if(cart.c === '^') {
             dest = cart.node.up;
@@ -142,7 +152,7 @@ const tick = carts => {
         }else if(cart.c === 'v') {
             dest = cart.node.down;
         }else if(cart.c === '<') {
-            dest = cart.node.up;
+            dest = cart.node.left;
         }
 
         if(dest.c === '+') {
@@ -151,25 +161,43 @@ const tick = carts => {
         }else if(dest.c === '/' || dest.c === '\\') {
             cart.c = getCurveDirection[cart.c][dest.c];
         }
+        cart.node = dest;
+        const key = `${dest.col},${dest.row}`;
+        if(positionsMoved[key]) {
+            collisions[key] = [
+                positionsMoved[key],
+                cart
+            ];
+        }
+        positionsMoved[key] = cart;
     });
 
-    return collision;
+    return collisions;
 }
 
 const solution1 = inputLines => {
     const carts = buildGraph(inputLines);
 
-    let collisionFound = false;
-    while(!collisionFound) {
-
+    let collisions = {};
+    while(Object.keys(collisions).length === 0) {
+        collisions = tick(carts);
     }
 
-    return carts.length;
+    return Object.keys(collisions);
 };
 
 const solution2 = inputLines => {
+    let carts = buildGraph(inputLines);
 
-    return inputLines;
+    while(carts.length > 1) {
+        const collisions = tick(carts);
+        const collisionedCarts = Object.values(collisions).reduce((acc, arr) => [...acc,...arr], []);
+        const collisionedCartsSet = new Set(collisionedCarts);
+        carts = carts.filter(cart => !collisionedCartsSet.has(cart));
+    }
+
+    const key = `${carts[0].node.col},${carts[0].node.row}`;
+    return key;
 };
 
 module.exports = [solution1, solution2];
