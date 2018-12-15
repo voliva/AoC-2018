@@ -119,12 +119,12 @@ const findAttackTarget = (field, units, unit) => {
 
 const unitTurn = (field, units, unit) => {
     if(unit.HP <= 0) {
-        return false;
+        return null;
     }
 
     const pathToEnemy = BFT(field, unit);
     if(!pathToEnemy.length) {
-        return false;
+        return !!units.find(u => u.HP > 0 && u.c !== unit.c);
     }
 
     if(pathToEnemy.length > 1) {
@@ -159,7 +159,12 @@ const round = (field, units, elvesCanDie = true) => {
             return u1Val - u2Val;
         });
 
-    return units.reduce((acc, unit) => unitTurn(field, units, unit) || acc, false) &&
+    return units.reduce((acc, unit) => {
+        const turnMoved = unitTurn(field, units, unit);
+        if(turnMoved) return true;
+        if(turnMoved === null) return acc;
+        return false;
+    }, false) &&
         (elvesCanDie || units.filter(u => u.c === 'E').every(elf => elf.HP > 0));
 }
 
@@ -177,7 +182,7 @@ const solution1 = inputLines => {
         .filter(u => u.HP > 0)
         .reduce((acc, u) => acc + u.HP, 0);
 
-    return (nRounds-2)*remainingHP;
+    return (nRounds-1)*remainingHP;
 };
 
 const solution2 = inputLines => {
@@ -252,7 +257,7 @@ const solution2 = inputLines => {
         .filter(u => u.HP > 0)
         .reduce((acc, u) => acc + u.HP, 0);
 
-    return (nRounds-2)*remainingHP;
+    return (nRounds-1)*remainingHP;
 };
 
 module.exports = [solution1, solution2];
