@@ -26,6 +26,7 @@ const readInput = inputLines => {
                     c,
                     row,
                     col,
+                    atk: 3,
                     HP: 200
                 });
             }
@@ -139,7 +140,7 @@ const unitTurn = (field, units, unit) => {
     if(pathToEnemy.length === 1) {
         // We have to check again for which enemies we have around, as we might attack another one (with fewer hit points)
         const enemyToAttack = findAttackTarget(field, units, unit);
-        enemyToAttack.HP -= 3;
+        enemyToAttack.HP -= unit.atk;
         if(enemyToAttack.HP <= 0) {
             const i = fromPos(enemyToAttack.row, enemyToAttack.col);
             field[i] = '.';
@@ -149,7 +150,7 @@ const unitTurn = (field, units, unit) => {
     return true;
 }
 
-const round = (field, units) => {
+const round = (field, units, elvesCanDie = true) => {
     units = units
         .filter(u => u.HP > 0)
         .sort((u1, u2) => {
@@ -158,7 +159,8 @@ const round = (field, units) => {
             return u1Val - u2Val;
         });
 
-    return units.reduce((acc, unit) => unitTurn(field, units, unit) || acc, false);
+    return units.reduce((acc, unit) => unitTurn(field, units, unit) || acc, false) &&
+        (elvesCanDie || units.filter(u => u.c === 'E').every(elf => elf.HP > 0));
 }
 
 const solution1 = inputLines => {
@@ -179,8 +181,78 @@ const solution1 = inputLines => {
 };
 
 const solution2 = inputLines => {
+    const { field: initialField, units: initialUnits } = readInput(inputLines);
 
-    return inputLines;
+    let lowerBound = 4;
+    let upperBound = Infinity;
+
+    // Find initial upperBound
+    while(upperBound === Infinity) {
+        const field = [
+            ...initialField
+        ];
+        const units = initialUnits.map(u => ({
+            ...u,
+            atk: u.c === 'E' ? lowerBound : u.atk
+        }));
+
+        let finished = false;
+        while(!finished) {
+            finished = !round(field, units, false);
+        }
+
+        if(units.filter(u => u.c === 'E').every(elf => elf.HP > 0)) {
+            upperBound = lowerBound;
+            lowerBound /= 2;
+            lowerBound++;
+        }else {
+            lowerBound *= 2;
+        }
+    }
+
+    while(lowerBound < upperBound - 1) {
+        const i = Math.round((lowerBound + upperBound)/2);
+
+        const field = [
+            ...initialField
+        ];
+        const units = initialUnits.map(u => ({
+            ...u,
+            atk: u.c === 'E' ? i : u.atk
+        }));
+
+        let finished = false;
+        while(!finished) {
+            finished = !round(field, units, false);
+        }
+
+        if(units.filter(u => u.c === 'E').every(elf => elf.HP > 0)) {
+            upperBound = i
+        }else {
+            lowerBound = i;
+        }
+    }
+
+    const field = [
+        ...initialField
+    ];
+    const units = initialUnits.map(u => ({
+        ...u,
+        atk: u.c === 'E' ? upperBound : u.atk
+    }));
+
+    let nRounds = 0;
+    let finished = false;
+    while(!finished) {
+        finished = !round(field, units);
+        nRounds++;
+    }
+
+    const remainingHP = units
+        .filter(u => u.HP > 0)
+        .reduce((acc, u) => acc + u.HP, 0);
+
+    return (nRounds-2)*remainingHP;
 };
 
 module.exports = [solution1, solution2];
