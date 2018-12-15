@@ -1,6 +1,6 @@
 
-const N_ROWS = 7;
-const N_COLS = 7;
+const N_ROWS = 32;
+const N_COLS = 32;
 
 const fromPos = (row, col) => row*N_COLS + col;
 const fromIdx = idx => ({
@@ -175,7 +175,7 @@ const solution1 = inputLines => {
         .filter(u => u.HP > 0)
         .reduce((acc, u) => acc + u.HP, 0);
 
-    return (nRounds-1)*remainingHP;
+    return (nRounds-2)*remainingHP;
 };
 
 const solution2 = inputLines => {
