@@ -46,7 +46,34 @@ const parseOpLog = inputLines => {
         while(inputLines[i] === '') i++;
     }
 
-    return result;
+    return [i, result];
+}
+
+const guessOpCodes = opArray => {
+    const opArrayPos = opArray.map(v => v.reduce((acc, v) => ({
+        ...acc,
+        [v]: true
+    }), {}));
+
+    while(opArray.some(v => Array.isArray(v))) {
+        opArrayPos.forEach((obj,i) => {
+            if(typeof opArray[i] === 'string') {
+                return;
+            }
+
+            const posibilities = Object.entries(obj)
+                .filter(([opkey, applies]) => applies)
+                .map(([opkey]) => opkey);
+
+            if(posibilities.length === 1) {
+                opArray[i] = posibilities[0];
+
+                opArrayPos.forEach((obj, i) => obj[posibilities[0]] = false);
+            }
+        });
+    }
+
+    return opArray;
 }
 
 const solution1 = inputLines => {
@@ -70,9 +97,26 @@ const solution1 = inputLines => {
     return result;
 };
 
-const solution2 = inputLines => {
+const parseOps = (inputLines, i) => {
+    const ops = [];
+    for(; i<inputLines.length; i++) {
+        ops.push(inputLines[i].split(' ').map(v => parseInt(v)));
+    }
+    return ops;
+}
 
-    return inputLines;
+const solution2 = inputLines => {
+    const [i, opArray] = parseOpLog(inputLines);
+    const opcodes = guessOpCodes(opArray);
+
+    const opList = parseOps(inputLines, i);
+    const registers = opList.reduce((reg, params) => {
+        const opCode = opcodes[params[0]];
+        reg[params[3]] = ops[opCode](params, reg);
+        return reg;
+    }, [0,0,0,0]);
+
+    return registers;
 };
 
 module.exports = [solution1, solution2];
