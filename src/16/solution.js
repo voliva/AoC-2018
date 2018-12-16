@@ -50,9 +50,24 @@ const parseOpLog = inputLines => {
 }
 
 const solution1 = inputLines => {
-    const ops = parseOpLog(inputLines).filter(v => v.length >= 3).length;
+    let result = 0;
 
-    return ops;
+    let i=0;
+    while(inputLines[i].startsWith('Before')) {
+        const initialRegisters = parseRegisters(inputLines[i]);
+        const operation = parseOperation(inputLines[i+1]);
+        const finalRegisters = parseRegisters(inputLines[i+2]);
+        i += 3;
+
+        const [opCode, A, B, C] = operation;
+
+        const posibleOps = Object.values(ops).filter(fn => finalRegisters[C] === fn(operation, initialRegisters)).length;
+        if(posibleOps >= 3) result++;
+
+        while(inputLines[i] === '') i++;
+    }
+
+    return result;
 };
 
 const solution2 = inputLines => {
