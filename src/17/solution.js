@@ -151,8 +151,33 @@ const solution1 = inputLines => {
 };
 
 const solution2 = inputLines => {
+    const ranges = inputLines.map(parseRange);
+    const max = ranges.reduce(({x,y}, r) => ({
+        x: Math.max(x, r.x.end),
+        y: Math.max(y, r.y.end)
+    }), { x: 0, y: 0});
+    const min = ranges.reduce(({x,y}, r) => ({
+        x: Math.min(x, r.x.start),
+        y: Math.min(y, r.y.start)
+    }), { x: Infinity, y: Infinity});
 
-    return inputLines;
+    const soil = createSoil(max);
+    fillSoilWithClay(soil, ranges);
+
+    flowDown(soil);
+
+    let count = 0;
+    soil.slice(min.y, max.y+1).forEach(row => {
+        row.forEach(col => {
+            if(col === '~') {
+                count++;
+            }
+        })
+    });
+
+    // printFullSoil(soil);
+
+    return count;
 };
 
 module.exports = [solution1, solution2];
