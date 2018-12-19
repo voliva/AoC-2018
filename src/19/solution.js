@@ -48,7 +48,30 @@ const solution1 = inputLines => {
 
 const solution2 = inputLines => {
 
-    return inputLines;
+    const ipReg = parseInt(inputLines[0].split(' ')[1]);
+    const program = inputLines.slice(1).map(parseOp);
+
+    const registers = [1,0,0,0,0,0];
+    while(registers[ipReg] < program.length) {
+        if(registers[ipReg] === 1) {
+            // After static code analysis, I find out that the fragment of code 1->17 does this:
+            for(let i=1; i<=registers[4]; i++) {
+                if(registers[4] % i === 0) {
+                    registers[0] += i;
+                }
+            }
+            registers[ipReg] = 16;
+        }
+        const instr = program[registers[ipReg]];
+        const opCode = instr[0];
+        let resStr = `ip=${registers[ipReg]} [${registers.join(', ')}] ${instr.join(' ')}`;
+        registers[instr[3]] = ops[opCode](instr, registers);
+        resStr += ` [${registers.join(', ')}]`;
+        console.log(resStr);
+        registers[ipReg]++;
+    }
+
+    return registers;
 };
 
 module.exports = [solution1, solution2];
