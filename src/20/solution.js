@@ -1,75 +1,3 @@
-
-const chars = 'NSEW'.split('');
-
-const parseRegex = (regex, start = 0) => {
-    let ending = regex[start] === '^' ? '$' : ')';
-
-    let roots = [];
-    let leaves = [];
-    let currents = [];
-    let i=start+1;
-    while(regex[i] !== ending) {
-        console.log(i);
-        if(regex[i] == '|') {
-            const node = {
-                dir: '',
-                nexts: []
-            }
-            currents = [node];
-            leaves.push(node);
-            roots.push(node);
-        }
-        if(regex[i] == '(') {
-            const res = parseRegex(regex, i);
-            for(let j=0; j<currents.length; j++) {
-                currents[j].nexts = currents[j].nexts.concat(res.roots);
-            }
-            if(!currents.length) {
-                roots = roots.concat(res.roots);
-            }
-            leaves = leaves.slice(0, -currents.length);
-            currents = res.leaves;
-            leaves = leaves.concat(res.leaves);
-
-            i = res.finish;
-        }
-        if(chars.includes(regex[i])) {
-            const node = {
-                dir: regex[i],
-                nexts: []
-            }
-            for(let j=0; j<currents.length; j++) {
-                currents[j].nexts.push(node);
-            }
-            leaves = leaves.slice(0, -currents.length);
-
-            if(!currents.length) {
-                roots.push(node);
-            }
-
-            currents = [node];
-            leaves.push(node);
-        }
-        i++;
-    }
-
-    return {
-        roots,
-        leaves,
-        finish: i
-    }
-}
-
-const printRegex = (roots) => {
-    if(roots.length === 0) return '';
-    if(roots.length === 1) {
-        return roots[0].dir + printRegex(roots[0].nexts);
-    }
-    return `(${
-        roots.map(r => r.dir + printRegex(r.nexts)).join('|')
-    })`;
-}
-
 const move = (start, dir) => {
     const pos = start.split(',').map(v => parseInt(v));
     switch(dir) {
@@ -89,30 +17,65 @@ const move = (start, dir) => {
     return pos.join(',');
 }
 
-const followRegex = (field, root, distance = 0, start = '0,0') => {
-    field[start] = field[start] || {
-        distance: Infinity,
-        connected: new Set()
-    };
-    field[start].distance = Math.min(field[start].distance, distance);
+const iterate = (line, i, field, currentPos) => {
+    const initialPos = currentPos;
+    const branches = new Set();
+    while(![')', '$'].includes(line[i]) && i < line.length) {
+        console.log(i);
+        switch(line[i]) {
+            case '(':
+                const res = iterate(line, i+1, field, currentPos);
+                currentPos = res.branches;
+                i = res.i + 1;
+                break;
+            case '|':
+                currentPos.forEach(p => branches.add(p));
+                currentPos = initialPos;
+                break;
+            default:
+                const newPositions = new Set();
+                currentPos.forEach(oldPos => {
+                    const newPos = move(oldPos, line[i]);
+                    newPositions.add(newPos);
 
-    const next = move(start, root.dir);
-    if(next !== start) {
-        field[start].connected.add(next);
+                    field[newPos] = field[newPos] || {
+                        distance: Infinity,
+                        doors: new Set()
+                    };
+                    field[newPos].distance = Math.min(field[newPos].distance, field[oldPos].distance + 1);
+                    field[newPos].doors.add(oldPos);
+                    field[oldPos].doors.add(newPos);
+                });
+                currentPos = newPositions;
+                break;
+        }
+        i++;
     }
 
-    root.nexts.forEach(n => followRegex(field, n, distance + 1, next));
+    currentPos.forEach(pos => {
+        branches.add(pos);
+    });
+
+    return {
+        branches,
+        i
+    };
 }
 
 const solution1 = inputLines => {
-    // const points = inputLines.map(parsePoint);
-    const regex = parseRegex(inputLines[0]).roots;
-    console.log('parsed');
-    // E(NS(W|W)|S(W|W))
+    const field = {
+        '0,0': {
+            distance: 0,
+            doors: new Set()
+        }
+    };
 
-    const field = {};
-    regex.forEach(r => followRegex(field, r));
-    console.log('ran');
+    const currentPos = new Set();
+    currentPos.add('0,0');
+
+    const input = inputLines[0];
+
+    iterate(input, 0, field, currentPos);
 
     return Object.values(field).reduce((max, room) => {
         return Math.max(max, room.distance)
