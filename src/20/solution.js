@@ -5,7 +5,7 @@ const move = (start, dir) => {
             pos[0]+=2;
             break;
         case 'N':
-            pos[1]-=2;
+            pos[0]-=2;
             break;
         case 'E':
             pos[1]+=2;
@@ -17,69 +17,49 @@ const move = (start, dir) => {
     return pos.join(',');
 }
 
-const iterate = (line, i, field, currentPos) => {
-    const initialPos = currentPos;
-    const branches = new Set();
+const iterate = (line, i) => {
+    let localDistances = {
+        '0,0': 0
+    };
+    let position = '0,0';
+    const branchSizes = [];
+    let subBranchDistance = 0;
+
     while(![')', '$'].includes(line[i]) && i < line.length) {
-        console.log(i);
         switch(line[i]) {
             case '(':
-                const res = iterate(line, i+1, field, currentPos);
-                currentPos = res.branches;
+                const res = iterate(line, i+1);
+                subBranchDistance += res.size;
                 i = res.i + 1;
                 break;
             case '|':
-                currentPos.forEach(p => branches.add(p));
-                currentPos = initialPos;
+                branchSizes.push(localDistances[position] + subBranchDistance);
+                position = '0,0';
+                subBranchDistance = 0;
                 break;
             default:
-                const newPositions = new Set();
-                currentPos.forEach(oldPos => {
-                    const newPos = move(oldPos, line[i]);
-                    newPositions.add(newPos);
-
-                    field[newPos] = field[newPos] || {
-                        distance: Infinity,
-                        doors: new Set()
-                    };
-                    field[newPos].distance = Math.min(field[newPos].distance, field[oldPos].distance + 1);
-                    field[newPos].doors.add(oldPos);
-                    field[oldPos].doors.add(newPos);
-                });
-                currentPos = newPositions;
+                const newPos = move(position, line[i]);
+                localDistances[newPos] = localDistances[newPos] === undefined ? Infinity : localDistances[newPos];
+                localDistances[newPos] = Math.min(localDistances[newPos], localDistances[position] + 1);
+                position = newPos;
                 break;
         }
         i++;
     }
 
-    currentPos.forEach(pos => {
-        branches.add(pos);
-    });
+    branchSizes.push(localDistances[position] + subBranchDistance);
 
+    console.log(branchSizes, localDistances);
     return {
-        branches,
+        size: branchSizes.reduce((max, v) => Math.max(max, v)),
         i
-    };
+    }
 }
 
+// 4332 too high
+
 const solution1 = inputLines => {
-    const field = {
-        '0,0': {
-            distance: 0,
-            doors: new Set()
-        }
-    };
-
-    const currentPos = new Set();
-    currentPos.add('0,0');
-
-    const input = inputLines[0];
-
-    iterate(input, 0, field, currentPos);
-
-    return Object.values(field).reduce((max, room) => {
-        return Math.max(max, room.distance)
-    }, 0);
+    return iterate('^ENNWSWW(NEWS|)SSSEEN(WNSE|)EE(SWEN|)NNN$', 0);
 };
 
 const solution2 = inputLines => {
