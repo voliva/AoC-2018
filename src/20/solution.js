@@ -1,14 +1,11 @@
 
 const chars = 'NSEW'.split('');
 
-const getAllLeaves = roots => roots.reduce((leaves, root) => leaves.concat(
-    root.nexts.length > 0 ? getAllLeaves(root.nexts) : root
-), []);
-
 const parseRegex = (regex, start = 0) => {
     let ending = regex[start] === '^' ? '$' : ')';
 
     let roots = [];
+    let leaves = [];
     let currents = [];
     let i=start+1;
     while(regex[i] !== ending) {
@@ -18,6 +15,7 @@ const parseRegex = (regex, start = 0) => {
                 nexts: []
             }
             currents = [node];
+            leaves.push(node);
             roots.push(node);
         }
         if(regex[i] == '(') {
@@ -28,7 +26,9 @@ const parseRegex = (regex, start = 0) => {
             if(!currents.length) {
                 roots = roots.concat(res.roots);
             }
-            currents = getAllLeaves(res.roots); // getAllLeaves gives duplicates >:(
+            leaves = leaves.slice(0, -currents.length);
+            currents = res.leaves;
+            leaves = leaves.concat(res.leaves);
 
             i = res.finish;
         }
@@ -39,18 +39,22 @@ const parseRegex = (regex, start = 0) => {
             }
             for(let j=0; j<currents.length; j++) {
                 currents[j].nexts.push(node);
-                currents[j] = node;
             }
+            leaves = leaves.slice(0, -currents.length);
+
             if(!currents.length) {
                 roots.push(node);
-                currents.push(node);
             }
+
+            currents = [node];
+            leaves.push(node);
         }
         i++;
     }
 
     return {
         roots,
+        leaves,
         finish: i
     }
 }
@@ -65,12 +69,44 @@ const printRegex = (roots) => {
     })`;
 }
 
+const move = (start, dir) => {
+    const pos = start.split(',').map(v => parseInt(v));
+    switch(dir) {
+        case 'S':
+            pos[0]+=2;
+            break;
+        case 'N':
+            pos[1]-=2;
+            break;
+        case 'E':
+            pos[1]+=2;
+            break;
+        case 'W':
+            pos[1]-=2;
+            break;
+    }
+    return pos.join(',');
+}
+
+const followRegex = (field, root, start = '0,0') => {
+    field[start] = field[start] || [];
+    const next = move(start, root.dir);
+    if(next !== start) {
+        field[start].push(next);
+    }
+
+    root.nexts.forEach(n => followRegex(field, n, next));
+}
+
 const solution1 = inputLines => {
     // const points = inputLines.map(parsePoint);
-    const regex = parseRegex("^E(N|)SW$").roots;
+    const regex = parseRegex("^WNE$").roots;
     // E(NS(W|W)|S(W|W))
 
-    return printRegex(regex);
+    const field = {};
+    followRegex(field, regex[0]);
+
+    return field;
 };
 
 const solution2 = inputLines => {
