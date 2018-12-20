@@ -9,6 +9,7 @@ const parseRegex = (regex, start = 0) => {
     let currents = [];
     let i=start+1;
     while(regex[i] !== ending) {
+        console.log(i);
         if(regex[i] == '|') {
             const node = {
                 dir: '',
@@ -88,25 +89,34 @@ const move = (start, dir) => {
     return pos.join(',');
 }
 
-const followRegex = (field, root, start = '0,0') => {
-    field[start] = field[start] || [];
+const followRegex = (field, root, distance = 0, start = '0,0') => {
+    field[start] = field[start] || {
+        distance: Infinity,
+        connected: new Set()
+    };
+    field[start].distance = Math.min(field[start].distance, distance);
+
     const next = move(start, root.dir);
     if(next !== start) {
-        field[start].push(next);
+        field[start].connected.add(next);
     }
 
-    root.nexts.forEach(n => followRegex(field, n, next));
+    root.nexts.forEach(n => followRegex(field, n, distance + 1, next));
 }
 
 const solution1 = inputLines => {
     // const points = inputLines.map(parsePoint);
-    const regex = parseRegex("^WNE$").roots;
+    const regex = parseRegex(inputLines[0]).roots;
+    console.log('parsed');
     // E(NS(W|W)|S(W|W))
 
     const field = {};
-    followRegex(field, regex[0]);
+    regex.forEach(r => followRegex(field, r));
+    console.log('ran');
 
-    return field;
+    return Object.values(field).reduce((max, room) => {
+        return Math.max(max, room.distance)
+    }, 0);
 };
 
 const solution2 = inputLines => {
