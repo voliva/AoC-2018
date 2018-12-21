@@ -55,7 +55,36 @@ const solution2 = inputLines => {
     const program = inputLines.slice(1).map(parseOp);
 
     const registers = [1,0,0,0,0,0];
-    
+
+    let previousR1Value = null;
+    const r1Set = new Set();
+    while(registers[ipReg] < program.length) {
+        const instr = program[registers[ipReg]];
+        const opCode = instr[0];
+        
+        let resStr = `ip=${registers[ipReg]} [${registers.join(', ')}] ${instr.join(', ')}`;
+        registers[instr[3]] = ops[opCode](instr, registers);
+        resStr += ` [${registers.join(', ')}]`;
+        // console.log(registers[1], resStr);
+        // As trying to figure out how r1 works (which gets multiplied by a specific number and masked) and the number of iterations
+        // is hard (because of a goto and that it depends on r1), I'll just try to see when r1 gets repeated and use the previous R1
+        if(registers[ipReg] === 28) {
+            if(r1Set.has(registers[1])) {
+                return previousR1Value;
+            }
+            previousR1Value = registers[1];
+            r1Set.add(registers[1]);
+            console.log(r1Set.size);
+        }
+
+        registers[ipReg]++;
+
+        // Instructions 18 => 27 achieve this by doing an expensive loop
+        if(registers[ipReg] === 18) {
+            registers[4] = Math.floor(registers[4] / 256);
+            registers[ipReg] = 8;
+        }
+    }
 
     return registers;
 };
