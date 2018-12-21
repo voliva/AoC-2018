@@ -17,32 +17,37 @@ const move = (start, dir) => {
     return pos.join(',');
 }
 
-const iterate = (line, i) => {
+const iterate = (line, i, distances, initialPosition = '0,0') => {
+    distances[initialPosition] = distances[initialPosition] || 0;
+    let initialDistance = distances[initialPosition];
+
     let localDistances = {
-        '0,0': 0
-    };
-    let position = '0,0';
-    let distance = 0;
+        [initialPosition]: initialDistance
+    }
+
+    let position = initialPosition;
+    let distance = initialDistance;
     const subBranchSizes = [];
 
     while(![')', '$'].includes(line[i]) && i < line.length) {
         switch(line[i]) {
             case '(':
-                const res = iterate(line, i+1);
+                const res = iterate(line, i+1, distances, position);
                 subBranchSizes.push(distance + res.max);
                 distance += res.cont;
                 i = res.i;
                 break;
             case '|':
-                position = '0,0';
-                distance = 0;
+                position = initialPosition;
+                distance = initialDistance;
                 break;
             default:
                 const newPos = move(position, line[i]);
                 if(newPos !== position) {
                     distance++;
-                    localDistances[newPos] = localDistances[newPos] === undefined ? Infinity : localDistances[newPos];
-                    localDistances[newPos] = Math.min(localDistances[newPos], distance);
+                    distances[newPos] = distances[newPos] === undefined ? Infinity : distances[newPos];
+                    distances[newPos] = Math.min(distances[newPos], distance);
+                    localDistances[newPos] = distances[newPos];
                     position = newPos;
                 }
                 break;
@@ -50,23 +55,22 @@ const iterate = (line, i) => {
         i++;
     }
 
-    // console.log(localDistances, subBranchSizes, localDistances[position]);
+    const allSizes = Object.values(localDistances).concat(subBranchSizes);
     return {
-        max: Object.values(localDistances).concat(subBranchSizes).reduce((max, v) => Math.max(max, v)),
-        cont: localDistances[position],
+        max: allSizes.reduce((max, v) => Math.max(max, v)) - initialDistance,
+        cont: localDistances[position] - initialDistance,
         i
     }
 }
 
-// 4332 too high
-
 const solution1 = inputLines => {
-    return iterate(inputLines[0], 0);
+    return iterate(inputLines[0], 0, {}).max;
 };
 
 const solution2 = inputLines => {
-
-    return inputLines;
+    const distances = {}
+    iterate(inputLines[0], 0, distances);
+    return Object.values(distances).filter(d => d >= 1000).length;
 };
 
 module.exports = [solution1, solution2];
