@@ -58,6 +58,7 @@ const solution1 = inputLines => {
 
 const solution2 = inputLines => {
     const [depth, target] = readInput(inputLines);
+    target.push(1);
 
     const erosionLvls = {};
     const rockTypes = {};
@@ -89,54 +90,47 @@ const solution2 = inputLines => {
     }
 
     let result = undefined;
+    let maxR = 0;
     while(result === undefined) {
         const edge = edges.deq();
         if(getFromMap(distances, edge.dest) === undefined) {
-            console.log(edge.dest);
+            if(maxR < edge.dest[0]) { // Log progress
+                maxR = edge.dest[0];
+                console.log(maxR);
+            }
+
             setOnMap(distances, edge.dest, edge.dist);
 
             const pos = edge.dest.slice(0, 2);
             const equip = edge.dest[2];
 
-            const enqueueEquip = (pos, eq) => {
-                const changePen = eq === equip ? 0 : 7;
+            const enqueueMove = (pos, eq, cost) => {
+                if(getFromMap(distances, pos) !== undefined) return;
+                const type = ensurePosition(pos);
+                if(!isCompatible(type, eq)) return;
+                
                 edges.enq({
-                    dist: edge.dist + 1 + changePen,
+                    dist: edge.dist + cost,
                     dest: [...pos, eq]
                 });
             }
-            const enqueueAllEquips = pos => {
-                if(pos[0] === target[0] && pos[1] === target[1]) {
-                    enqueueEquip(pos, 1);
-                    return;
-                }
-
-                const type = ensurePosition(pos);
-                // console.log(pos, type);
-                // process.exit(1);
-                for(let eq=0; eq<3; eq++) {
-                    if(isCompatible(type, eq)) {
-                        enqueueEquip(pos, eq);
-                    }
-                }
-            }
 
             if(pos[0] > 0) {
-                enqueueAllEquips([pos[0]-1, pos[1]]);
+                enqueueMove([pos[0]-1, pos[1]], equip, 1);
             }
             if(pos[1] > 0) {
-                enqueueAllEquips([pos[0], pos[1]-1]);
+                enqueueMove([pos[0], pos[1]-1], equip, 1);
             }
-            enqueueAllEquips([pos[0]+1, pos[1]]);
-            enqueueAllEquips([pos[0], pos[1]+1]);
+            enqueueMove([pos[0]+1, pos[1]], equip, 1);
+            enqueueMove([pos[0], pos[1]+1], equip, 1);
+            enqueueMove(pos, (equip + 1) % 3, 7);
+            enqueueMove(pos, (equip + 2) % 3, 7);
         }
-        if(edge.dest[0] === target[0] && edge.dest[1] === target[1]) {
+        if(edge.dest[0] === target[0] && edge.dest[1] === target[1] && edge.dest[2] === target[2]) {
             result = edge.dist;
         }
     }
 
-    // 6312 too high
-    // 1069 too low
     return result;
 }
 
