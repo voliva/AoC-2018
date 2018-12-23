@@ -64,35 +64,61 @@ const intersect = (seg1, seg2) => {
     return { max, min }
 }
 
+const start = new Date().getTime();
+
+const logTime = (...args) => console.log(new Date().getTime() - start, ...args);
+
+const jsnx = require('jsnetworkx');
+
 const solution2 = inputLines => {
     const bots = inputLines.map(parseBot);
-    const segments = [];
 
-    bots.forEach((bot, i) => {
-        console.log(i, segments.length);
-
+    logTime('start');
+    const segments = bots.map((bot, i) => {
         const rotatedPosition = rotate(bot.pos);
         const min = getPointAtDist(-bot.r, rotatedPosition);
         const max = getPointAtDist(bot.r, rotatedPosition);
 
-        const segment = {
+        return {
             min,
-            max,
-            value: 1
+            max
         }
-
-        segments.forEach(seg => {
-            const intersection = intersect(seg, segment);
-            if(intersection) {
-                intersection.value = seg.value + 1;
-                segments.push(intersection);
-            }
-        });
-
-        segments.push(segment);
     });
 
-    return segments.length;
+    logTime('intersect');
+    const intersections = segments.map(_ => 0);
+    for(let i=0; i<segments.length; i++) {
+        for(let j=i+1; j<segments.length; j++) {
+            const s1 = segments[i];
+            const s2 = segments[j];
+            const intersection = intersect(s1, s2);
+            if(intersection) {
+                intersections[i]++;
+                intersections[j]++;
+            }
+        }
+    }
+
+    logTime('remove 1000', intersections.join(','));
+    const wo1000 = intersections.reduce((wo1000, v, i) => v >= 1000 ? wo1000 : wo1000.add(i), new Set());
+    
+    logTime('new size', wo1000.size);
+
+    // var G = new jsnx.Graph();
+    // G.addEdge(i, j);
+
+    // logTime('cliques');
+    // const cliques = jsnx.genFindCliques(G);
+
+    // cliques.then(cliquesArr => {
+    //     logTime('cliques found');
+    //     console.log(cliquesArr.length);
+    //     console.log(cliquesArr.map(a => a.length));
+    // }, err => {
+    //     logTime(err);
+    // });
+
+    return;
 }
 
 module.exports = [solution1, solution2];
