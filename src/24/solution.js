@@ -25,7 +25,7 @@ const parseSW = SW => {
 }
 
 const parseInput = inputLines => {
-    const ret = {
+    const teams = {
         immune: [],
         infection: []
     };
@@ -48,9 +48,9 @@ const parseInput = inputLines => {
             initiative: Number(resLine[6]),
             team
         }
-        ret[team].push(group);
+        teams[team].push(group);
     });
-    return ret;
+    return teams;
 }
 
 const effectivePower = gr => gr.size * gr.atk;
@@ -61,17 +61,17 @@ const getAtkMultiplier = (attacking, target) => {
     return 1;
 }
 
-const targetSelection = groups => {
-    const allGroups = groups.immune.concat(groups.infection)
+const targetSelection = teams => {
+    const allGroups = teams.immune.concat(teams.infection)
         .map(gr => {
             gr.chosen = false;
             return gr;
         })
         .sort((gr1, gr2) => {
-            const efp1 = effectivePower(gr1);
-            const efp2 = effectivePower(gr2);
-            if(efp1 !== efp2) {
-                return efp2 - efp1;
+            const ep1 = effectivePower(gr1);
+            const ep2 = effectivePower(gr2);
+            if(ep1 !== ep2) {
+                return ep2 - ep1;
             }
             return gr2.initiative - gr1.initiative
         });
@@ -122,28 +122,28 @@ const attack = allGroups => {
 
 const hasFinished = groups => groups.immune.length === 0 || groups.infection.length === 0;
 
-const pruneDead = group => group.filter(gr => gr.size > 0);
-const unitCount = group => group.reduce((total, gr) => total + gr.size, 0);
+const pruneDead = team => team.filter(gr => gr.size > 0);
+const unitCount = team => team.reduce((total, gr) => total + gr.size, 0);
 
-const battle = (groups, boost = 0) => {
-    const groupCopy = {
-        immune: groups.immune.map(gr => ({
+const battle = (teams, boost = 0) => {
+    const teamsCopy = {
+        immune: teams.immune.map(gr => ({
             ...gr ,
             atk: gr.atk + boost
         })),
-        infection: groups.infection.map(gr => ({...gr}))
+        infection: teams.infection.map(gr => ({...gr}))
     }
 
     let prevImmune = Infinity;
     let prevInfection = Infinity;
-    while(!hasFinished(groupCopy)) {
-        const groupsSelected = targetSelection(groupCopy);
+    while(!hasFinished(teamsCopy)) {
+        const groupsSelected = targetSelection(teamsCopy);
         attack(groupsSelected, boost);
-        groupCopy.immune = pruneDead(groupCopy.immune);
-        groupCopy.infection = pruneDead(groupCopy.infection);
+        teamsCopy.immune = pruneDead(teamsCopy.immune);
+        teamsCopy.infection = pruneDead(teamsCopy.infection);
 
-        const immuneCount = unitCount(groupCopy.immune);
-        const infectionCount = unitCount(groupCopy.infection);
+        const immuneCount = unitCount(teamsCopy.immune);
+        const infectionCount = unitCount(teamsCopy.infection);
         if(immuneCount === prevImmune || infectionCount === prevInfection) {
             break;
         }
@@ -151,35 +151,35 @@ const battle = (groups, boost = 0) => {
         prevInfection = infectionCount;
     }
 
-    const immuneCount = unitCount(groupCopy.immune);
-    const infectionCount = unitCount(groupCopy.infection);
+    const immuneCount = unitCount(teamsCopy.immune);
+    const infectionCount = unitCount(teamsCopy.infection);
 
     if(immuneCount === prevImmune && infectionCount !== prevInfection) {
         return {
-            immune: groupCopy.immune,
+            immune: teamsCopy.immune,
             infection: []
         }
     }
     if(immuneCount !== prevImmune && infectionCount === prevInfection) {
         return {
             immune: [],
-            infection: groupCopy.infection
+            infection: teamsCopy.infection
         }
     }
 
-    return groupCopy;
+    return teamsCopy;
 }
 
 const solution1 = inputLines => {
-    const groups = parseInput(inputLines);
+    const teams = parseInput(inputLines);
 
-    const result = battle(groups);
+    const result = battle(teams);
 
     return unitCount(result.immune) + unitCount(result.infection);
 };
 
 const solution2 = inputLines => {
-    const groups = parseInput(inputLines);
+    const teams = parseInput(inputLines);
 
     let lowerBound = 0;
     let maxBound = Infinity;
@@ -187,7 +187,7 @@ const solution2 = inputLines => {
     let immuneAlive = 0;
     do {
         lowerBound = (lowerBound === 0 ? 1 : lowerBound*2);
-        const result = battle(groups, lowerBound);
+        const result = battle(teams, lowerBound);
         immuneAlive = unitCount(result.immune);
     } while(immuneAlive === 0);
     maxBound = lowerBound; // maxBound is the lowest value we know it will pass
@@ -195,7 +195,7 @@ const solution2 = inputLines => {
 
     while(maxBound - lowerBound > 1) {
         const boost = Math.trunc((maxBound + lowerBound) / 2);
-        const result = battle(groups, boost);
+        const result = battle(teams, boost);
         if(unitCount(result.immune) > 0) {
             maxBound = boost;
         }else {
@@ -203,7 +203,7 @@ const solution2 = inputLines => {
         }
         console.log(lowerBound, maxBound);
     }
-    const result = battle(groups, maxBound);
+    const result = battle(teams, maxBound);
 
     return unitCount(result.immune);
 }
