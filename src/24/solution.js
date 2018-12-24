@@ -144,27 +144,11 @@ const battle = (teams, boost = 0) => {
 
         const immuneCount = unitCount(teamsCopy.immune);
         const infectionCount = unitCount(teamsCopy.infection);
-        if(immuneCount === prevImmune || infectionCount === prevInfection) {
+        if(immuneCount === prevImmune && infectionCount === prevInfection) {
             break;
         }
         prevImmune = immuneCount;
         prevInfection = infectionCount;
-    }
-
-    const immuneCount = unitCount(teamsCopy.immune);
-    const infectionCount = unitCount(teamsCopy.infection);
-
-    if(immuneCount === prevImmune && infectionCount !== prevInfection) {
-        return {
-            immune: teamsCopy.immune,
-            infection: []
-        }
-    }
-    if(immuneCount !== prevImmune && infectionCount === prevInfection) {
-        return {
-            immune: [],
-            infection: teamsCopy.infection
-        }
     }
 
     return teamsCopy;
@@ -196,12 +180,11 @@ const solution2 = inputLines => {
     while(maxBound - lowerBound > 1) {
         const boost = Math.trunc((maxBound + lowerBound) / 2);
         const result = battle(teams, boost);
-        if(unitCount(result.immune) > 0) {
+        if(unitCount(result.infection) === 0) {
             maxBound = boost;
         }else {
             lowerBound = boost;
         }
-        console.log(lowerBound, maxBound);
     }
     const result = battle(teams, maxBound);
 
